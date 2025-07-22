@@ -55,8 +55,7 @@ jobs:
     executor: docker-executor
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 20.10.14
+      - setup_remote_docker
       - run:
           name: Login to Docker Hub
           command: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
