@@ -97,7 +97,8 @@ jobs:
             git config user.email "ci@circleci.com"
             git add environments/dev/values.yaml
             git commit -m "Update dev image tags to ${CIRCLE_SHA1:0:7} [skip ci]" || echo "No changes to commit"
-            git push origin $CIRCLE_BRANCH
+            git push https://Highshow14:${GH_PAT}@github.com/Highshow14/Cloud-Native-Application-Deployment.git HEAD:$CIRCLE_BRANCH
+
 
   update-prod-values:
     docker:
@@ -123,7 +124,8 @@ jobs:
             git config user.email "ci@circleci.com"
             git add environments/prod/values.yaml
             git commit -m "Update prod image tags to ${CIRCLE_SHA1:0:7} [skip ci]" || echo "No changes to commit"
-            git push origin $CIRCLE_BRANCH
+            git push https://Highshow14:${GH_PAT}@github.com/Highshow14/Cloud-Native-Application-Deployment.git HEAD:$CIRCLE_BRANCH
+
 
 workflows:
   version: 2
