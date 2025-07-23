@@ -82,8 +82,9 @@ jobs:
           name: Install yq
           command: |
             sudo apt update && sudo apt install -y wget
-            wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
-            sudo chmod +x /usr/bin/yq
+            wget -O yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+            chmod +x yq
+            sudo mv yq /usr/local/bin/yq
       - run:
           name: Update Helm values.yaml with image tags
           command: |
@@ -107,8 +108,9 @@ jobs:
           name: Install yq
           command: |
             sudo apt update && sudo apt install -y wget
-            wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
-            sudo chmod +x /usr/bin/yq
+            wget -O yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+            chmod +x yq
+            sudo mv yq /usr/local/bin/yq
       - run:
           name: Update Helm values.yaml with image tags
           command: |
