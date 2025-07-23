@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nebulance-backend
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/highshow14/nebulance-gitops.git  # Replace with your GitOps repository URL
+    targetRevision: HEAD
+    path: helm/nebulance
+    helm:
+      valueFiles:
+        - values.yaml
+        - environments/prod/values.yaml
+      parameters:
+        - name: backend.image.tag
+          value: latest
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

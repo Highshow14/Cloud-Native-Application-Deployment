@@ -2,7 +2,6 @@ version: 2.1
 
 orbs:
   aws-cli: circleci/aws-cli@3.1.1
-  kubernetes: circleci/kubernetes@1.3.1
 
 executors:
   docker-executor:
@@ -74,53 +73,55 @@ jobs:
             docker push $DOCKER_USERNAME/nebulance-backend:${CIRCLE_SHA1:0:7}
             docker push $DOCKER_USERNAME/nebulance-backend:latest
 
-  deploy-to-dev:
+  update-dev-values:
     docker:
       - image: cimg/python:3.9
     steps:
       - checkout
-      - aws-cli/setup:
-          profile-name: default
       - run:
-          name: Update kubeconfig
+          name: Install yq
           command: |
-            aws eks update-kubeconfig --name eks-nebulance --region $AWS_REGION
-      - kubernetes/install-kubectl
+            sudo apt update && sudo apt install -y wget
+            wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+            sudo chmod +x /usr/bin/yq
       - run:
-          name: Install Helm
+          name: Update Helm values.yaml with image tags
           command: |
-            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+            yq e ".frontend.image.tag = \"${CIRCLE_SHA1:0:7}\"" -i environments/dev/values.yaml
+            yq e ".backend.image.tag = \"${CIRCLE_SHA1:0:7}\"" -i environments/dev/values.yaml
       - run:
-          name: Deploy to dev environment
+          name: Commit and push changes to Git
           command: |
-            helm upgrade --install nebulance ./helm/nebulance \
-              --values ./environments/dev/values.yaml \
-              --set frontend.image.tag=${CIRCLE_SHA1:0:7} \
-              --set backend.image.tag=${CIRCLE_SHA1:0:7}
+            git config user.name "circleci"
+            git config user.email "ci@circleci.com"
+            git add environments/dev/values.yaml
+            git commit -m "Update dev image tags to ${CIRCLE_SHA1:0:7} [skip ci]" || echo "No changes to commit"
+            git push origin $CIRCLE_BRANCH
 
-  deploy-to-prod:
+  update-prod-values:
     docker:
       - image: cimg/python:3.9
     steps:
       - checkout
-      - aws-cli/setup:
-          profile-name: default
       - run:
-          name: Update kubeconfig
+          name: Install yq
           command: |
-            aws eks update-kubeconfig --name eks-nebulance --region $AWS_REGION
-      - kubernetes/install-kubectl
+            sudo apt update && sudo apt install -y wget
+            wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+            sudo chmod +x /usr/bin/yq
       - run:
-          name: Install Helm
+          name: Update Helm values.yaml with image tags
           command: |
-            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+            yq e ".frontend.image.tag = \"${CIRCLE_SHA1:0:7}\"" -i environments/prod/values.yaml
+            yq e ".backend.image.tag = \"${CIRCLE_SHA1:0:7}\"" -i environments/prod/values.yaml
       - run:
-          name: Deploy to production environment
+          name: Commit and push changes to Git
           command: |
-            helm upgrade --install nebulance ./helm/nebulance \
-              --values ./environments/prod/values.yaml \
-              --set frontend.image.tag=${CIRCLE_SHA1:0:7} \
-              --set backend.image.tag=${CIRCLE_SHA1:0:7}
+            git config user.name "circleci"
+            git config user.email "ci@circleci.com"
+            git add environments/prod/values.yaml
+            git commit -m "Update prod image tags to ${CIRCLE_SHA1:0:7} [skip ci]" || echo "No changes to commit"
+            git push origin $CIRCLE_BRANCH
 
 workflows:
   version: 2
@@ -134,7 +135,7 @@ workflows:
             - test-backend
           context:
             - CLOUD-NATIVE
-      - deploy-to-dev:
+      - update-dev-values:
           requires:
             - build-and-push-images
           context:
@@ -147,11 +148,11 @@ workflows:
       - approve-prod-deployment:
           type: approval
           requires:
-            - deploy-to-dev
+            - update-dev-values
           filters:
             branches:
               only: main
-      - deploy-to-prod:
+      - update-prod-values:
           requires:
             - approve-prod-deployment
           context:
